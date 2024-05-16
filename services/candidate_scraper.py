@@ -96,7 +96,6 @@ def scrape_profile_worker(linkedin_id):
                 print("scraping failed due to session token not setup or expired")
                 return {"error": "Your Linkedin session token is not set up correctly or has expired"}
 
-            simulate_human_scroll(driver)  # Simulate human scrolling and mouse movements
             random_delay()  # Add random delay
 
             headline = search_for_candidate_headline(driver)
