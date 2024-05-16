@@ -7,6 +7,7 @@ from settings import LINKEDIN_ACCESS_TOKEN, LINKEDIN_ACCESS_TOKEN_EXP, HEADLESS
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 # Setting up the options
 options = Options()
@@ -110,7 +111,7 @@ def search_for_candidate_profile_picture(driver):
     """Search for profile's picture URL in the page"""
     try:
         wait = WebDriverWait(driver, 10)  # Wait up to 10 seconds
-        profile_picture_element = wait.until(EC.presence_of_element_located((By.XPATH, '/html/body/div[10]/div[3]/div/div/div[2]/div/div/main/section[1]/div[2]/div[1]/div[1]/div/button/img')))
+        profile_picture_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'img.pv-top-card-profile-picture__image--show')))
         profile_picture_url = profile_picture_element.get_attribute('src')
         return profile_picture_url
     except Exception as e:
