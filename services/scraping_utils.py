@@ -2,170 +2,153 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from settings import LINKEDIN_ACCESS_TOKEN, LINKEDIN_ACCESS_TOKEN_EXP, HEADLESS
-from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
+from selenium import webdriver
+from time import sleep
+from pyvirtualdisplay import Display
+from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import Pool
+from webdriver_manager.chrome import ChromeDriverManager
+from settings import LINKEDIN_ACCESS_TOKEN, LINKEDIN_ACCESS_TOKEN_EXP, HEADLESS
 
 # Setting up the options
 options = Options()
-if not HEADLESS=="False":
+if HEADLESS.lower() != "false":
     options.add_argument("--headless=new")
 options.add_argument('--ignore-ssl-errors=yes')
 options.add_argument('--ignore-certificate-errors=yes')
 options.add_argument("--log-level=3")
-
-
+options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36')
 
 # Setting up service
-service = Service(ChromeDriverManager().install(), log_output='nul')
+service = Service(ChromeDriverManager().install())
 
 def find_by_xpath_or_None(driver, *xpaths):
-    """returns the text inside and elemnt by its xPath"""
+    """Returns the text inside an element by its xPath."""
     for xpath in xpaths:
         try:
             return driver.find_element(By.XPATH, xpath).text
         except NoSuchElementException:
-            #print(f"Element not found : {xpath}")
             continue
     return None
 
-
 def search_for_candidate_name(driver):
-    """search for profile's name in the page"""
+    """Search for the profile's name on the page."""
     try:
-        name = find_by_xpath_or_None(driver, '/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[1]/div[2]/div[2]/div[1]/div[1]/span/a/h1','/html/body/div[4]/div[3]/div/div/div[2]/div/div/main/section[1]/div[2]/div[2]/div[1]/div[1]/span/a/h1')
+        name = find_by_xpath_or_None(driver, '/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[1]/div[2]/div[2]/div[1]/div[1]/span/a/h1',
+                                      '/html/body/div[4]/div[3]/div/div/div[2]/div/div/main/section[1]/div[2]/div[2]/div[1]/div[1]/span/a/h1')
         return name
     except Exception as e:
         print(f"Error finding name: {e}")
     return None
 
-
 def search_for_candidate_headline(driver):
-    """search for profile's headline in the page"""
+    """Search for the profile's headline on the page."""
     try:
-        headline = find_by_xpath_or_None(driver, '/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[1]/div[2]/div[2]/div[1]/div[2]','/html/body/div[4]/div[3]/div/div/div[2]/div/div/main/section[1]/div[2]/div[2]/div[1]/div[2]')
+        headline = find_by_xpath_or_None(driver, '/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[1]/div[2]/div[2]/div[1]/div[2]',
+                                             '/html/body/div[4]/div[3]/div/div/div[2]/div/div/main/section[1]/div[2]/div[2]/div[1]/div[2]')
         return headline
     except Exception as e:
         print(f"Error finding headline: {e}")
     return None
 
-
-def search_for_section(driver,section_name,min_index=2,max_index=8) :
-    """search for a section's content by section name in the page"""
+def search_for_section(driver, section_name, min_index=2, max_index=8):
+    """Search for a section's content by section name on the page."""
     try:
-        # Initialize variables
         sectionIndex = min_index
-        found_elements = {
-            'positions': [],
-            'institutions': [],
-            'dates': []
-        }
+        found_elements = {'positions': [], 'institutions': [], 'dates': []}
 
-        # Function to add found elements to the dictionary
         def add_elements(position, institution, date):
             if position: found_elements['positions'].append(position)
             if institution: found_elements['institutions'].append(institution)
             if date: found_elements['dates'].append(date)
 
-        # Loop through sections until "section_title" section is found
-        while sectionIndex <= max_index :
-            # Check if the section title matches "section_name"
+        while sectionIndex <= max_index:
             section_title = find_by_xpath_or_None(driver, f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[2]/div/div/div/h2/span[1]')
             if section_title == section_name:
-                # Experience
                 elementIndex = 1
-                if section_name == "Experience" :
+                if section_name == "Experience":
                     while True:
-                        target_element_position = find_by_xpath_or_None(driver, f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[1]/div/div/div/div/div/span[1]',f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[2]/ul/li[1]/div/div[2]/div/a/div/div/div/div/span[1]',f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[2]/ul/li[1]/div/div[2]/div/a/div/div/div/div/div/span[1]',f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/div/span[1]/span[1]')
-                        target_element_institution = find_by_xpath_or_None(driver, f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[1]/div/span[1]/span[1]',f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[1]/a/div/div/div/div/span[1]',f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[1]/a/div/div/div/div/span[1]')
-                        target_element_date = find_by_xpath_or_None(driver, f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[1]/div/span[2]/span[1]',f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[1]/a/span[1]/span[1]',f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/div/span[2]/span[1]')
+                        target_element_position = find_by_xpath_or_None(driver, f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[1]/div/div/div/div/div/span[1]',
+                                                                       f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[2]/ul/li[1]/div/div[2]/div/a/div/div/div/div/span[1]',
+                                                                       f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[2]/ul/li[1]/div/div[2]/div/a/div/div/div/div/div/span[1]',
+                                                                       f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/div/span[1]/span[1]')
+                        target_element_institution = find_by_xpath_or_None(driver, f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[1]/div/span[1]/span[1]',
+                                                                           f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[1]/a/div/div/div/div/span[1]',
+                                                                           f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[1]/a/div/div/div/div/span[1]')
+                        target_element_date = find_by_xpath_or_None(driver, f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[1]/div/span[2]/span[1]',
+                                                                    f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div[1]/a/span[1]/span[1]',
+                                                                    f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/div/span[2]/span[1]')
                         if not target_element_position:
                             break
-
                         add_elements(target_element_position, target_element_institution, target_element_date)
                         elementIndex += 1
-                # Education
-                if section_name == "Education" :
+                if section_name == "Education":
                     while True:
-                        target_element_position = find_by_xpath_or_None(driver, f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/a/span[1]/span[1]',f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/a/span[1]/span[1]')
-                        target_element_institution = find_by_xpath_or_None(driver, f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/a/div/div/div/div/span[1]',f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/a/div/div/div/div/span[1]')
-                        target_element_date = find_by_xpath_or_None(driver, f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/a/span[2]/span[1]',f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/a/span[2]/span[1]')
-
+                        target_element_position = find_by_xpath_or_None(driver, f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/a/span[1]/span[1]',
+                                                                       f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/a/span[1]/span[1]')
+                        target_element_institution = find_by_xpath_or_None(driver, f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/a/div/div/div/div/span[1]',
+                                                                           f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/a/div/div/div/div/span[1]')
+                        target_element_date = find_by_xpath_or_None(driver, f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/a/span[2]/span[1]',
+                                                                    f'/html/body/div[5]/div[3]/div/div/div[2]/div/div/main/section[{sectionIndex}]/div[3]/ul/li[{elementIndex}]/div/div[2]/div/a/span[2]/span[1]')
                         if not target_element_position:
                             break
-
                         add_elements(target_element_position, target_element_institution, target_element_date)
                         elementIndex += 1
                 break
-            sectionIndex += 1  # Move to the next section
-        
+            sectionIndex += 1
         return found_elements
     except Exception as e:
-        print(f"Error finding section :{e}")
+        print(f"Error finding section: {e}")
         return None
 
 def search_for_candidate_profile_picture(driver):
-    """Search for profile's picture URL in the page"""
+    """Search for the profile's picture URL on the page."""
     try:
-        wait = WebDriverWait(driver, 10)  # Wait up to 10 seconds
+        wait = WebDriverWait(driver, 10)
         profile_picture_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'img.pv-top-card-profile-picture__image--show')))
         profile_picture_url = profile_picture_element.get_attribute('src')
         return profile_picture_url
     except Exception as e:
         print(f"Error finding profile picture: {e}")
+    return None
+
+def extract_linkedin_profile(linkedin_url):
+    """Extract LinkedIn profile information."""
+    try:
+        driver = webdriver.Chrome(service=service, options=options)
+        driver.get(linkedin_url)
+        sleep(1)
+
+        # Adding cookies
+        driver.add_cookie({"name": "li_at", "value": LINKEDIN_ACCESS_TOKEN, "domain": ".www.linkedin.com", "expiry": int(LINKEDIN_ACCESS_TOKEN_EXP)})
+        driver.add_cookie({"name": "liap", "value": LINKEDIN_ACCESS_TOKEN, "domain": ".www.linkedin.com", "expiry": int(LINKEDIN_ACCESS_TOKEN_EXP)})
+        driver.get(linkedin_url)
+
+        profile = {
+            "Name": search_for_candidate_name(driver),
+            "Headline": search_for_candidate_headline(driver),
+            "Profile Picture": search_for_candidate_profile_picture(driver),
+            "Experience": search_for_section(driver, "Experience", 2, 8),
+            "Education": search_for_section(driver, "Education", 2, 8),
+        }
+
+        driver.quit()
+        return profile
+    except Exception as e:
+        print(f"Error extracting LinkedIn profile: {e}")
         return None
 
+def extract_linkedin_profiles_concurrently(linkedin_urls, concurrency=4):
+    """Extract multiple LinkedIn profiles concurrently."""
+    with ThreadPoolExecutor(max_workers=concurrency) as executor:
+        results = list(executor.map(extract_linkedin_profile, linkedin_urls))
+    return results
 
-def search_for_company_name(driver):
-    """search for comapny's name in the page"""
-    try:
-        company_name = find_by_xpath_or_None(driver, '/html/body/div[5]/div[3]/div/div[2]/div/div[2]/main/div[1]/section/div/div[2]/div[2]/div[1]/div[2]/div/h1')
-        return company_name
-    except Exception as e:
-        print(f"Error finding company name: {e}")
-    return None
-
-
-def search_for_company_industry(driver):
-    """search for comapny's industry in the page"""
-    try:
-        company_industry = find_by_xpath_or_None(driver, '/html/body/div[4]/div[3]/div/div[2]/div/div[2]/main/div[1]/section/div/div[2]/div[2]/div[1]/div[2]/div/div/div[1]', '/html/body/div[5]/div[3]/div/div[2]/div/div[2]/main/div[1]/section/div/div[2]/div[2]/div[1]/div[2]/div/div/div[1]')
-        return company_industry
-    except Exception as e:
-        print(f"Error finding company industry: {e}")
-    return None
-
-
-def search_for_company_about(driver):
-    """search for comapny's name in the page"""
-    try:
-        more_button = driver.find_element(By.XPATH, '/html/body/div[5]/div[3]/div/div[2]/div/div[2]/main/div[2]/div/div[1]/section/div/div/div[1]/div/span[3]/span/a')
-        more_button.click()
-        company_about = find_by_xpath_or_None(driver, '/html/body/div[5]/div[3]/div/div[2]/div/div[2]/main/div[2]/div/div[1]/section/div/div/div[1]/div/span[1]')
-        return company_about
-    except Exception as e:
-        print(f"Error finding company about: {e}")
-    return None
-    
-
-def add_session_cookie(driver):
-    """load cookies from a file and add it to the driver"""
-    cookie = {
-        "domain": ".www.linkedin.com",
-        "name": "li_at",
-        "value": LINKEDIN_ACCESS_TOKEN,
-        "path": "/",
-        "secure": True,
-        "httpOnly": True,
-        "expirationDate":LINKEDIN_ACCESS_TOKEN_EXP,
-    }
-    # Add cookies to the driver
-    try:
-        driver.get("https://www.linkedin.com")
-        driver.add_cookie(cookie)
-    except Exception as e:
-        print(f"Error adding cookies to driver : {e}")
-    
+# Example usage
+if __name__ == "__main__":
+    linkedin_urls = ["https://www.linkedin.com/in/some-profile/", "https://www.linkedin.com/in/another-profile/"]
+    profiles = extract_linkedin_profiles_concurrently(linkedin_urls, concurrency=4)
+    for profile in profiles:
+        print(profile)
