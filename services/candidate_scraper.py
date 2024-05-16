@@ -40,9 +40,10 @@ def simulate_human_scroll(driver):
 
     # Simulate mouse movements
     actions = webdriver.ActionChains(driver)
+    window_size = driver.get_window_size()
     for _ in range(3):
-        x = random.randint(100, driver.get_window_size()['width'] - 100)
-        y = random.randint(100, driver.get_window_size()['height'] - 100)
+        x = random.randint(100, window_size['width'] - 100)
+        y = random.randint(100, window_size['height'] - 100)
         actions.move_by_offset(x, y)
         actions.perform()
         time.sleep(random.uniform(0.5, 2))
