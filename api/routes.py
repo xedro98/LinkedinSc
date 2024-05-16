@@ -1,22 +1,22 @@
-from fastapi import FastAPI, HTTPException
-
+from fastapi import FastAPI, HTTPException, Body
+from typing import List
 from services.candidate_scraper import scrape_linkedin_profile
 from services.company_scraper import scrape_linkedin_company
 
 app = FastAPI()
 
-@app.get("/profile-data/{linkedin_id}")
-async def profile_data(linkedin_id: str):
+@app.post("/profile-data")
+async def profile_data(linkedin_ids: List[str] = Body(...)):
     try:
-        profile_infos = scrape_linkedin_profile(linkedin_id)
+        profile_infos = scrape_linkedin_profile(linkedin_ids)
         return profile_infos
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error fetching profile details")
 
-@app.get("/comapny-data/{linkedin_id}")
-async def comapny_data(linkedin_id: str):
+@app.post("/company-data")
+async def company_data(linkedin_ids: List[str] = Body(...)):
     try:
-        profile_infos = scrape_linkedin_company(linkedin_id)
-        return profile_infos
+        company_infos = scrape_linkedin_company(linkedin_ids)
+        return company_infos
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error fetching company details")
