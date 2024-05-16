@@ -3,7 +3,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-
+import random
 from settings import LINKEDIN_ACCESS_TOKEN, LINKEDIN_ACCESS_TOKEN_EXP, HEADLESS
 
 # Setting up the options
@@ -13,6 +13,14 @@ if not HEADLESS=="False":
 options.add_argument('--ignore-ssl-errors=yes')
 options.add_argument('--ignore-certificate-errors=yes')
 options.add_argument("--log-level=3")
+
+# Add a random user-agent string
+user_agent_list = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:53.0) Gecko/20100101 Firefox/53.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36"
+]
+options.add_argument(f"user-agent={random.choice(user_agent_list)}")
 
 # Setting up service
 service = Service(ChromeDriverManager().install(), log_output='nul')
