@@ -1,8 +1,6 @@
 from selenium import webdriver
 from time import sleep
-from services.scraping_utils import options, service, search_for_candidate_name, search_for_candidate_headline, search_for_section, add_session_cookie
-from concurrent.futures import ThreadPoolExecutor
-import json
+from services.scraping_utils import options, service, search_for_candidate_name, search_for_candidate_headline, search_for_section, search_for_profile_picture, add_session_cookie
 from multiprocessing import Pool
 
 def scrape_linkedin_profile(linkedin_ids):
@@ -39,23 +37,24 @@ def scrape_profile_worker(linkedin_id):
         
         sleep(1)
         
-        # Scrape name, experiences, education from the LinkedIn profile
+        # Scrape name, experiences, education, and profile picture from the LinkedIn profile
         try:
             name = search_for_candidate_name(driver)
             if not name:
                 driver.quit()
-                print("scraping failed due to session token not setup or expired")
-                return {"error": "Your Linkedin session token is not set up correctly or has expired"}
+                print("Scraping failed due to session token not set up or expired")
+                return {"error": "Your LinkedIn session token is not set up correctly or has expired"}
             
             headline = search_for_candidate_headline(driver)
             education = search_for_section(driver, "Education")
             experience = search_for_section(driver, "Experience")
+            profile_picture = search_for_profile_picture(driver)
         except Exception as e:
-            print(f"Error scraping details for {linkedin_id} : {e}")
+            print(f"Error scraping details for {linkedin_id}: {e}")
             return {"error": f"Error searching for details for {linkedin_id}"}
         
         driver.quit()
-        print(f"finished fetching details for profile {linkedin_id} successfully")
+        print(f"Finished fetching details for profile {linkedin_id} successfully")
         
         return {
             "linkedin_id": linkedin_id,
@@ -63,7 +62,8 @@ def scrape_profile_worker(linkedin_id):
             "headline": headline,
             "education": education,
             "experience": experience,
+            "profile_picture": profile_picture,
         }
     except Exception as e:
-        print(f"Error fetching details for {linkedin_id} : {e}")
+        print(f"Error fetching details for {linkedin_id}: {e}")
         return {"error": f"Error fetching profile details for {linkedin_id}"}
