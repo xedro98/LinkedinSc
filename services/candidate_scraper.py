@@ -1,16 +1,28 @@
+import asyncio
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from time import sleep
 from services.scraping_utils import options, service, search_for_candidate_name, search_for_candidate_headline, search_for_section, add_session_cookie
 
+# Add the constants for the LinkedIn access token and headless mode
+LINKEDIN_ACCESS_TOKEN = "AQEDASR_V5cE4jaLAAABj3o87OAAAAGPnklw4E0Ah8qAU6n5YIY9SSWluVuPJ7q78KD_r_PmszI5s0UCMzqfnfpBvVGe6Ejz6KGCKokf11BsOkP7MHqxqOgL4EMiguE6XYNDvZkW4KxumfuK4ApcQ6MI"
+HEADLESS = False
 
-def scrape_linkedin_profile(linkedin_id):
-    """Scraping linkedIn profile data"""
+async def scrape_linkedin_profile(linkedin_id):
+    """Scrape LinkedIn profile data asynchronously."""
     try:
         # Setup Selenium WebDriver
-        driver = webdriver.Chrome(service=service,options=options)    
+        chrome_options = Options()
+        if HEADLESS:
+            chrome_options.add_argument("--headless")
+        service = Service('/usr/local/bin/chromedriver')
+        driver = webdriver.Chrome(service=service, options=chrome_options)
 
-        # Load cookies from the file
-        add_session_cookie(driver)
+        # Load cookies
+        driver.get('https://www.linkedin.com')
+        add_session_cookie(driver, LINKEDIN_ACCESS_TOKEN)
+        driver.refresh()
 
         print(f'Scraping data for id: {linkedin_id}')
 
@@ -25,25 +37,25 @@ def scrape_linkedin_profile(linkedin_id):
             print(f"Profile for {linkedin_id} not found (404)")
             return {"error": f"Profile for {linkedin_id} not found."}
 
-        sleep(1)
+        await asyncio.sleep(1)
 
-        # Scrape name,experinces,education form the LinkedIn profile
+        # Scrape name, experiences, education from the LinkedIn profile
         try:
             name = search_for_candidate_name(driver)
             if not name:
                 driver.quit()
-                print("scraping failed due to session token not setup or expired")
-                return {"error": "Your Linkedin session token is not set up correctly or has expired"}
+                print("Scraping failed due to session token not setup or expired")
+                return {"error": "Your LinkedIn session token is not set up correctly or has expired"}
             headline = search_for_candidate_headline(driver)
-            education = search_for_section(driver,"Education")
-            experience = search_for_section(driver,"Experience")
+            education = search_for_section(driver, "Education")
+            experience = search_for_section(driver, "Experience")
         except Exception as e:
-            print(f"Error scraping details for {linkedin_id} : {e}")
+            print(f"Error scraping details for {linkedin_id}: {e}")
             return {"error": f"Error searching for details for {linkedin_id}"}
-    
+
         driver.quit()
 
-        print(f"finished feching details for profile {linkedin_id} successfully")
+        print(f"Finished fetching details for profile {linkedin_id} successfully")
         return {
             "linkedin_id": linkedin_id,
             "name": name,
@@ -51,7 +63,7 @@ def scrape_linkedin_profile(linkedin_id):
             "education": education,
             "experience": experience,
         }
-    
+
     except Exception as e:
-        print(f"Error feching details for {linkedin_id} : {e}")
-        return {"error": f"Error feching profile details for {linkedin_id}"}
+        print(f"Error fetching details for {linkedin_id}: {e}")
+        return {"error": f"Error fetching profile details for {linkedin_id}"}
