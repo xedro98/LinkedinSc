@@ -1,65 +1,55 @@
-from selenium import webdriver
-from time import sleep
-from services.scraping_utils import options, service, search_for_candidate_name, search_for_candidate_headline, search_for_section, add_session_cookie
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
+import aiohttp
+from services.scraping_utils import search_for_candidate_name, search_for_candidate_headline, search_for_section
 
-executor = ThreadPoolExecutor()
-
-async def scrape_linkedin_profile(linkedin_id):
-    loop = asyncio.get_running_loop()
-    result = await loop.run_in_executor(executor, sync_scrape_linkedin_profile, linkedin_id)
-    return result
-
-def sync_scrape_linkedin_profile(linkedin_id):
-    """Scraping linkedIn profile data"""
+async def scrape_linkedin_profile(linkedin_id, session):
+    """Scraping LinkedIn profile data asynchronously"""
     try:
-        # Setup Selenium WebDriver
-        driver = webdriver.Chrome(service=service,options=options)    
-
-        # Load cookies from the file
-        add_session_cookie(driver)
-
         print(f'Scraping data for id: {linkedin_id}')
-
-        # LinkedIn URL for the profile
         profile_url = f"https://www.linkedin.com/in/{linkedin_id}/"
 
-        # Navigate to the LinkedIn profile
-        driver.get(profile_url)
+        async with session.get(profile_url) as response:
+            if response.status == 404:
+                print(f"Profile for {linkedin_id} not found (404)")
+                return {"error": f"Profile for {linkedin_id} not found."}
 
-        if "/404" in driver.current_url or "Page not found" in driver.page_source:
-            driver.quit()
-            print(f"Profile for {linkedin_id} not found (404)")
-            return {"error": f"Profile for {linkedin_id} not found."}
+            page_source = await response.text()
 
-        sleep(1)
+            # Scrape name, experiences, education from the LinkedIn profile
+            try:
+                name = search_for_candidate_name(page_source)
+                if not name:
+                    print("scraping failed due to session token not setup or expired")
+                    return {"error": "Your Linkedin session token is not set up correctly or has expired"}
 
-        # Scrape name,experinces,education form the LinkedIn profile
-        try:
-            name = search_for_candidate_name(driver)
-            if not name:
-                driver.quit()
-                print("scraping failed due to session token not setup or expired")
-                return {"error": "Your Linkedin session token is not set up correctly or has expired"}
-            headline = search_for_candidate_headline(driver)
-            education = search_for_section(driver,"Education")
-            experience = search_for_section(driver,"Experience")
-        except Exception as e:
-            print(f"Error scraping details for {linkedin_id} : {e}")
-            return {"error": f"Error searching for details for {linkedin_id}"}
-    
-        driver.quit()
+                headline = search_for_candidate_headline(page_source)
+                education = search_for_section(page_source, "Education")
+                experience = search_for_section(page_source, "Experience")
+            except Exception as e:
+                print(f"Error scraping details for {linkedin_id} : {e}")
+                return {"error": f"Error searching for details for {linkedin_id}"}
 
-        print(f"finished feching details for profile {linkedin_id} successfully")
-        return {
-            "linkedin_id": linkedin_id,
-            "name": name,
-            "headline": headline,
-            "education": education,
-            "experience": experience,
-        }
-    
+            print(f"finished fetching details for profile {linkedin_id} successfully")
+            return {
+                "linkedin_id": linkedin_id,
+                "name": name,
+                "headline": headline,
+                "education": education,
+                "experience": experience,
+            }
     except Exception as e:
-        print(f"Error feching details for {linkedin_id} : {e}")
-        return {"error": f"Error feching profile details for {linkedin_id}"}
+        print(f"Error fetching details for {linkedin_id} : {e}")
+        return {"error": f"Error fetching profile details for {linkedin_id}"}
+
+async def main():
+    linkedin_ids = [...]  # List of LinkedIn IDs to scrape
+    async with aiohttp.ClientSession() as session:
+        tasks = []
+        for linkedin_id in linkedin_ids:
+            task = asyncio.create_task(scrape_linkedin_profile(linkedin_id, session))
+            tasks.append(task)
+
+        results = await asyncio.gather(*tasks)
+        print(results)
+
+asyncio.run(main())
