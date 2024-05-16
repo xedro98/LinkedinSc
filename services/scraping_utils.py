@@ -3,7 +3,6 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-import random
 from settings import LINKEDIN_ACCESS_TOKEN, LINKEDIN_ACCESS_TOKEN_EXP, HEADLESS
 
 # Setting up the options
@@ -14,13 +13,7 @@ options.add_argument('--ignore-ssl-errors=yes')
 options.add_argument('--ignore-certificate-errors=yes')
 options.add_argument("--log-level=3")
 
-# Add a random user-agent string
-user_agent_list = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:53.0) Gecko/20100101 Firefox/53.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36"
-]
-options.add_argument(f"user-agent={random.choice(user_agent_list)}")
+
 
 # Setting up service
 service = Service(ChromeDriverManager().install(), log_output='nul')
@@ -113,14 +106,17 @@ def search_for_section(driver,section_name,min_index=2,max_index=8) :
 def search_for_candidate_profile_picture(driver):
     """Search for profile's picture URL in the page"""
     try:
-        profile_picture_element = driver.find_element(By.XPATH, '//*[@class="pv-top-card-profile-picture__image--show evi-image ember-view"]')
-        profile_picture_url = profile_picture_element.get_attribute('src')
+        profile_picture_element = driver.find_element(By.XPATH, '//img[contains(@class, "pv-top-card-profile-picture__image--show")]')
+        profile_picture_url = profile_picture_element.getAttribute('src')
+        print(f"Profile picture URL found: {profile_picture_url}")
         return profile_picture_url
     except NoSuchElementException:
+        print("Profile picture element not found.")
         return None
     except Exception as e:
         print(f"Error finding profile picture: {e}")
         return None
+
 
 
 

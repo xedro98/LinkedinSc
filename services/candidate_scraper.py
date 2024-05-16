@@ -56,10 +56,11 @@ def scrape_profile_worker(linkedin_id):
             profile_picture_url = search_for_candidate_profile_picture(driver)
         except Exception as e:
             print(f"Error scraping details for {linkedin_id} : {e}")
+            driver.quit()
             return {"error": f"Error searching for details for {linkedin_id}"}
         
         driver.quit()
-        print(f"finished fetching details for profile {linkedin_id} successfully")
+        print(f"Finished fetching details for profile {linkedin_id} successfully")
         
         return {
             "linkedin_id": linkedin_id,
@@ -72,4 +73,5 @@ def scrape_profile_worker(linkedin_id):
     except Exception as e:
         print(f"Error fetching details for {linkedin_id} : {e}")
         return {"error": f"Error fetching profile details for {linkedin_id}"}
+
 
