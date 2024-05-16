@@ -72,3 +72,4 @@ def scrape_profile_worker(linkedin_id):
     except Exception as e:
         print(f"Error fetching details for {linkedin_id} : {e}")
         return {"error": f"Error fetching profile details for {linkedin_id}"}
+

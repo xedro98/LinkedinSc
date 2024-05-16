@@ -113,13 +113,15 @@ def search_for_section(driver,section_name,min_index=2,max_index=8) :
 def search_for_candidate_profile_picture(driver):
     """Search for profile's picture URL in the page"""
     try:
-        profile_picture_url = driver.find_element(By.XPATH, '/html/body/div[5]/div[3]/div/div[2]/div/div[2]/main/section[1]/div[2]/div[1]/div[1]/div/div/div[1]/img').get_attribute('src')
+        profile_picture_element = driver.find_element(By.XPATH, '//*[@class="pv-top-card-profile-picture__image--show evi-image ember-view"]')
+        profile_picture_url = profile_picture_element.get_attribute('src')
         return profile_picture_url
     except NoSuchElementException:
         return None
     except Exception as e:
         print(f"Error finding profile picture: {e}")
         return None
+
 
 
 def search_for_company_name(driver):
