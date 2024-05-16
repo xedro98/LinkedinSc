@@ -1,9 +1,17 @@
 from selenium import webdriver
 from time import sleep
 from services.scraping_utils import options, service, search_for_candidate_name, search_for_candidate_headline, search_for_section, add_session_cookie
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
+executor = ThreadPoolExecutor()
 
-def scrape_linkedin_profile(linkedin_id):
+async def scrape_linkedin_profile(linkedin_id):
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(executor, sync_scrape_linkedin_profile, linkedin_id)
+    return result
+
+def sync_scrape_linkedin_profile(linkedin_id):
     """Scraping linkedIn profile data"""
     try:
         # Setup Selenium WebDriver
