@@ -44,7 +44,16 @@ def simulate_human_scroll(driver):
     for _ in range(3):
         x = random.randint(100, window_size['width'] - 100)
         y = random.randint(100, window_size['height'] - 100)
-        actions.move_by_offset(x, y)
+
+        # Check if the cursor is within the visible area
+        current_x, current_y = actions.mouse_position
+        if current_x < 0 or current_x > window_size['width'] or current_y < 0 or current_y > window_size['height']:
+            # Move the cursor to the center of the window
+            center_x = window_size['width'] // 2
+            center_y = window_size['height'] // 2
+            actions.move_by_offset(center_x - current_x, center_y - current_y)
+
+        actions.move_by_offset(x - current_x, y - current_y)
         actions.perform()
         time.sleep(random.uniform(0.5, 2))
 
